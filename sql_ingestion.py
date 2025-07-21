@@ -61,6 +61,7 @@ selected_columns = [
     'instructionalMethodDescription',
     'isSectionLinked',
     'maximumEnrollment',
+    'enrollment',
     'seatsAvailable',
     'meetingsFaculty', # To be exploded and flattened
     'term',
