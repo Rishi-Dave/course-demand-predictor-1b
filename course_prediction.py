@@ -1,7 +1,7 @@
-import pandas as pd
 import glob
 import os
 
+import pandas as pd
 
 dfs = []
 csv_data = glob.glob("csv_data/*.csv")
