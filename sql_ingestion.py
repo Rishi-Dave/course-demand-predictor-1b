@@ -68,9 +68,8 @@ selected_columns = [
     'termDesc',
     'waitAvailable',
     'waitCapacity',
-    'waitCount',
-    # 'prerequisites' - Disregarded as per your request
-]
+    'waitCount'
+    ]
 
 print("Starting data ingestion and transformation...")
 
