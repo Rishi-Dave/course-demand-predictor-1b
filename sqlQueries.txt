@@ -1,0 +1,97 @@
+1. Create cs_courses data that only contains cs courses and remove classes that are not lectues/not credited
+    CREATE TABLE cs_courses AS
+    SELECT * 
+    FROM courses_data_flattened 
+    WHERE subject = 'CS';
+
+    DELETE FROM cs_courses WHERE credit_hours = '0.0';
+
+2. create column and set values for total demand
+    ALTER TABLE cs_courses 
+    ADD COLUMN totalDemand INTEGER;
+    UPDATE cs_courses 
+    SET totalDemand = waitCount + enrollment;
+
+3. create cs_courses_combined to sum up the data for each class in each quarter
+    CREATE TABLE cs_courses_combined AS
+    SELECT 
+        subjectCourse,
+        term,
+        termDesc,
+        courseDisplay,
+        courseNumber,
+        subject,
+        courseTitle,
+        creditHours,
+        year,
+        quarter,
+        SUM(enrollment) AS total_enrollment,
+        SUM(waitCount) AS total_waitCount,
+        SUM(totalDemand) AS total_totalDemand
+    FROM cs_courses
+    GROUP BY subjectCourse,
+        term,
+        termDesc,
+        courseDisplay,
+        courseNumber,
+        subject,
+        courseTitle,
+        creditHours,
+        year,
+        quarter;
+
+4. add columns and data for previous quarter and previous year
+    ALTER TABLE cs_courses_combined 
+    ADD COLUMN lastQuarterEnrollment INTEGER;
+
+    ALTER TABLE cs_courses_combined 
+    ADD COLUMN lastQuarterWaitcount INTEGER;
+
+    UPDATE cs_courses_combined 
+    SET lastQuarterEnrollment = (
+        SELECT prev.total_enrollment 
+        FROM cs_courses_combined prev 
+        WHERE prev.subjectCourse = cs_courses_combined.subjectCourse 
+        AND prev.term = (
+            CASE 
+                WHEN cs_courses_combined.term % 100 = 10 THEN cs_courses_combined.term - 70  -- Winter: 202410 → 202340
+                ELSE cs_courses_combined.term - 10  -- All others: just subtract 10
+            END
+        )
+    );
+
+    UPDATE cs_courses_combined 
+    SET lastQuarterWaitCount = (
+        SELECT prev.total_waitCount 
+        FROM cs_courses_combined prev 
+        WHERE prev.subjectCourse = cs_courses_combined.subjectCourse 
+        AND prev.term = (
+            CASE 
+                WHEN cs_courses_combined.term % 100 = 10 THEN cs_courses_combined.term - 70  -- Winter: 202410 → 202340
+                ELSE cs_courses_combined.term - 10  -- All others: just subtract 10
+            END
+        )
+    );
+
+    ALTER TABLE cs_courses_combined 
+    ADD COLUMN lastYearEnrollment INTEGER;
+
+    ALTER TABLE cs_courses_combined 
+    ADD COLUMN lastYearWaitCount INTEGER;
+
+    UPDATE cs_courses_combined 
+    SET lastYearEnrollment = (
+        SELECT prev.total_enrollment 
+        FROM cs_courses_combined prev 
+        WHERE prev.subjectCourse = cs_courses_combined.subjectCourse 
+        AND prev.term = cs_courses_combined.term - 100  -- Subtract 100 to get previous year
+    );
+
+    UPDATE cs_courses_combined 
+    SET lastYearWaitCount = (
+        SELECT prev.total_waitCount 
+        FROM cs_courses_combined prev 
+        WHERE prev.subjectCourse = cs_courses_combined.subjectCourse 
+        AND prev.term = cs_courses_combined.term - 100  -- Subtract 100 to get previous year
+    );
+    
